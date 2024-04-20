@@ -19,11 +19,6 @@ def unix_to_datetime(unix_timestamp):
     ora = time.strftime('%H:%M', time.localtime(unix_timestamp))
     return giorno, ora
 
-city_name = 'padova'
-days_number = 1
-#state_code = '35020'
-
-
 def get_weather_data(city_name, days_number):
     # API endpoint URL
     url1 = f'http://api.openweathermap.org/geo/1.0/direct?'
@@ -41,23 +36,15 @@ def get_weather_data(city_name, days_number):
         # print(geo_data)
         # Extract relevant weather information
         name = geo_data[0]['name']
-        print(name)
+        # print(name)
         lat = geo_data[0]['lat']
         lon = geo_data[0]['lon']
         country = geo_data[0]['country']
         state = geo_data[0]['state']
 
-        print(name, lat, lon, country, state)
+        # print(name, lat, lon, country, state)
     else:
         print('Error retrieving geographic data')
-
-
-    tempInfo = {    'lat': lat,
-                    'lon': lon,
-                    #'exclude': 0,
-                    'units': "metric",
-                    'lang': 0,
-                    }
 
     # API endpoint URL
     url = f'https://api.openweathermap.org/data/2.5/forecast?lat={lat}&lon={lon}&lang={"IT"}&units={"metric"}&appid={api_key}'
@@ -69,10 +56,12 @@ def get_weather_data(city_name, days_number):
     if response.status_code == 200:
         # Get the weather data
         weather_data = response.json()
+    else:
+        print('Error retrieving weather data')
 
-        # print(weather_data)
-        # Extract relevant weather information
-        #city = weather_data['name']
+    nome_citta = weather_data['city']['name']
+    text = f"Ecco le previsioni per {nome_citta}.\n"
+
     for i in range(len(weather_data['list'])):
         
         max_epoch = get_future_epoch(days_number)
@@ -102,18 +91,18 @@ def get_weather_data(city_name, days_number):
         except:
             rain_v= """non ha piovuto"""
         
-        text = f"""Dati per il giorno {giorno}, alle ore {ora}
-    e' previsto {weather_description}.
+        text = text + str(f"""Il giorno {giorno}, alle ore {ora}
+e' previsto {weather_description}.
 
-    Con una temperatura di {temp}°C, percepita come {temp_feels_like}°C.
+Con una temperatura di {temp}°C, percepita come {temp_feels_like}°C.
 
-    Probabilita' di precipitazioni: {pop}
-    Precipitazioni nelle ultime 3 ore: {rain_v}
-    """
+Probabilita' di precipitazioni: {pop}
+Precipitazioni nelle ultime 3 ore: {rain_v}
+""")
         print(text)
 
-    # ora provo a filtrare per giorno, potremmo usare il quando_dt e lasciare stare quelli che non ci interessano
-    # ricordando che quando_dt esprime il tempo in "secondi passati dal 01-01-1970"
+# ora provo a filtrare per giorno, potremmo usare il quando_dt e lasciare stare quelli che non ci interessano
+# ricordando che quando_dt esprime il tempo in "secondi passati dal 01-01-1970"
 
 def get_future_epoch(days):
     """
@@ -137,4 +126,4 @@ def get_future_epoch(days):
     return int(future_epoch)
 
 
-get_weather_data("Codevigo", 1)
+get_weather_data("Belluno", 3)
