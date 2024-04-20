@@ -15,7 +15,9 @@ def unix_to_datetime(unix_timestamp):
     Returns:
         str: A string representing the human-readable date/time.
     """
-    return time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(unix_timestamp))
+    giorno = time.strftime('%d-%m', time.localtime(unix_timestamp))
+    ora = time.strftime('%H:%M', time.localtime(unix_timestamp))
+    return giorno, ora
 
 city_name = 'padova'
 state_code = '35020'
@@ -45,7 +47,7 @@ if responseGeo.status_code == 200:
 
     print(name, lat, lon, country, state)
 else:
-    print('Error retrieving weather data')
+    print('Error retrieving geographic data')
 
 
 tempInfo = {    'lat': lat,
@@ -56,7 +58,7 @@ tempInfo = {    'lat': lat,
                 }
 
 # API endpoint URL
-url = f'https://api.openweathermap.org/data/2.5/forecast?lat={lat}&lon={lon}&appid={api_key}'
+url = f'https://api.openweathermap.org/data/2.5/forecast?lat={lat}&lon={lon}&lang={"IT"}&appid={api_key}'
 
 # Send the API request
 response = requests.get(url)
@@ -71,9 +73,20 @@ if response.status_code == 200:
     #city = weather_data['name']
 for i in range(len(weather_data['list'])):
     quando_dt = weather_data['list'][i]['dt']
-    print(quando_dt)
-    quando = unix_to_datetime(quando_dt)
-    print(quando)
+    #print(quando_dt)
+    giorno, ora = unix_to_datetime(quando_dt)
+
+    weather = weather_data['list'][i]['weather']
+    weather_id = weather[0]['id']
+    weather_main = weather[0]['main']
+    weather_description = weather[0]['description']
+    weather_icon = weather[0]['icon']
+
+    print(weather)
+    text = f"""Dati per il giorno {giorno}, alle ore {ora}
+
+"""
+    print(text)
     #temperature = weather_data['main']['temp']
     #description = weather_data['weather'][0]['description']
 
@@ -81,5 +94,3 @@ for i in range(len(weather_data['list'])):
     #print(f'Weather in {city}:')
     #print(f'Temperature: {temperature}°C')
     #print(f'Description: {description}')
-else:
-    print('Error retrieving weather data')
