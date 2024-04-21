@@ -69,12 +69,18 @@ def decode_giorno_fine(data, tempInfo):
     
     if data == 2:
         tempInfo['finish'] = tempInfo['start'] + 3
+        if(tempInfo['finish']- tempInfo['start']>2):
+            tempInfo['finish'] = tempInfo['start'] + 2
         return tempInfo
     
     if data == 3:
         tempInfo['finish'] = tempInfo['start'] + 4
+        if(tempInfo['finish']- tempInfo['start']>2):
+            tempInfo['finish'] = tempInfo['start'] + 2
         return tempInfo
     
     if data == 4:
         tempInfo['finish'] = tempInfo['start'] + 5
+        if(tempInfo['finish']- tempInfo['start']>2):
+            tempInfo['finish'] = tempInfo['start'] + 2
         return tempInfo
