@@ -189,7 +189,7 @@ def main() -> int:
     # $ means "end of line/string"
     # So ^ABC$ will only allow 'ABC'
     conv_handler = ConversationHandler(
-        entry_points=[CommandHandler("meteo", enter_cycle)],
+        entry_points=[CommandHandler(["meteo", "start"], enter_cycle)],
         states={
             RANGE1: [
                 CallbackQueryHandler(
