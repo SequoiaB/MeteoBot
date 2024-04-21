@@ -12,8 +12,8 @@ import logging
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, ReplyKeyboardRemove
 from telegram.ext import Application, CommandHandler, ConversationHandler, ContextTypes, MessageHandler, filters, CallbackQueryHandler
 import MetodiBot
-import MetodiBot2
 import MetodiTg
+import DecodeQuery
 from dotenv import load_dotenv
 import os
 from io import BytesIO
@@ -42,7 +42,7 @@ ONE, TWO, THREE, FOUR, FIVE, SIX, SEVEN, EIGHT, NINE, TEN, ELEVEN, TWELVE = rang
 
 async def enter_cycle(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     global tempInfo
-    tempInfo = {'City': "?",
+    tempInfo = {'city': "?",
                 'start': 0,
                 'finish': 0,
                 }
@@ -53,12 +53,10 @@ async def enter_cycle(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
     keyboard = [
         [
             InlineKeyboardButton("Oggi", callback_data=str(ONE)),
-            InlineKeyboardButton("Domani",
-                                 callback_data=str(TWO)),
+            InlineKeyboardButton("Domani",callback_data=str(TWO)),
         ],
         [
-            InlineKeyboardButton(
-                "Custom", callback_data=str(THREE)),
+            InlineKeyboardButton("Custom", callback_data=str(NINE)),
             #InlineKeyboardButton("B4",callback_data=str(FOUR)),
         ],
         [
@@ -68,17 +66,19 @@ async def enter_cycle(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     # Send message with text and appended InlineKeyboard
-    await update.message.reply_text("Ciao, che materia vuoi studiare?", reply_markup=reply_markup)
+    await update.message.reply_text("Ciao! per che giornata/e vuoi vedere il meteo?🪟", reply_markup=reply_markup)
     # Tell ConversationHandler that we're in state `FIRST` now
     return RANGE1
 
 
 async def scelta_giorno_inizio(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Show new choice of buttons"""
+    global tempInfo
     query = update.callback_query
     await query.answer()
-    # print(query.data)
-    dato = int(query.data)
+
+    # non serve il dato in teoria
+    # dato = int(query.data)
+    # print("query.data = ", dato)
 
     keyboard = [
         [
@@ -104,23 +104,22 @@ async def scelta_giorno_inizio(update: Update, context: ContextTypes.DEFAULT_TYP
     return RANGE2
 
 async def scelta_giorno_fine(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Show new choice of buttons"""
+    global tempInfo
     query = update.callback_query
     await query.answer()
-    # print(query.data)
     inizio = int(query.data)
-    print(inizio)
+    tempInfo = DecodeQuery.decode_giorno_inizio(inizio, tempInfo)
     keyboard = [
         [
-            InlineKeyboardButton("1", callback_data=str(ONE)),
+            InlineKeyboardButton("Solo quel giorno", callback_data=str(ONE)),
         ],
         [
-            InlineKeyboardButton("2", callback_data=str(TWO)),
-            InlineKeyboardButton("3", callback_data=str(THREE)),
+            InlineKeyboardButton("2 giorni", callback_data=str(TWO)),
+            InlineKeyboardButton("3 giorni", callback_data=str(THREE)),
         ],
         [
-            InlineKeyboardButton("4", callback_data=str(FOUR)),
-            InlineKeyboardButton("5", callback_data=str(FIVE)),
+            InlineKeyboardButton("4 giorni", callback_data=str(FOUR)),
+            InlineKeyboardButton("5 giorni", callback_data=str(FIVE)),
         ],
         [
             InlineKeyboardButton("Esci", callback_data=str(TEN)),
@@ -128,25 +127,37 @@ async def scelta_giorno_fine(update: Update, context: ContextTypes.DEFAULT_TYPE)
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     await query.edit_message_text(
-        text="Bene, ora scegli quanto tempo far durare le tue sessioni di studio", reply_markup=reply_markup
+        text="Bene, ora scegli quanti giorni di meteo vuoi vedere dalla data scelta, \n\n_ricorda che sono disponibili i dati fino a 5 giorni da adesso_", reply_markup=reply_markup
     )
     return RANGE3
 
-async def scelta_city(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def save_fine(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Show new choice of buttons"""
     global tempInfo
     query = update.callback_query
     await query.answer()
-    # print(query.data)
-    dato = int(query.data)
-    if dato == 0:
-        tempInfo['start'] = 0
-        tempInfo['finish'] = 1
-        tempInfo["City"] = "Padova"
-        text = MetodiBot.get_weather_data(tempInfo['City'], tempInfo["start"], tempInfo["finish"])
-        esc_text = MetodiTg.escape_special_chars(text)
+    fine = int(query.data)
+    tempInfo = DecodeQuery.decode_giorno_fine(fine, tempInfo)
+    text = "Che citta' ti interessa?"
+    esc_text = MetodiTg.escape_special_chars(text)
+
     await query.edit_message_text(esc_text, parse_mode="MarkdownV2")
     return RANGE4
+
+async def scelta_city(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Show new choice of buttons"""
+    global tempInfo
+    city = update.message.text
+    tempInfo['city'] = city
+    try:
+        text = MetodiBot.get_weather_data(tempInfo['city'], tempInfo["start"], tempInfo["finish"])
+    except:
+        text = "Qualcosa e' andato storto, se vuoi puoi dirlo a @eddichan"
+    esc_text = MetodiTg.escape_special_chars(text)
+
+    await update.message.reply_text(esc_text, parse_mode="MarkdownV2")
+    await end(update=update, context=context)
+    return ConversationHandler.END
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Send a message when the command /help is issued."""
@@ -154,18 +165,16 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
 '''
     await update.message.reply_text(help_message, parse_mode="MarkdownV2")
 
-
-async def stampa(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    photo = ""
-    await update.message.reply_photo(photo, caption="aa", parse_mode="MarkdownV2")
-
 async def end(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Returns `ConversationHandler.END`, which tells the
-    ConversationHandler that the conversation is over.
-    """
+    
+    return ConversationHandler.END
+
+async def end_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
     await query.answer()
-    await query.edit_message_text(text="Scrivimi quando vuoi vedere il meteo 👋")
+    text = "Ci vediamo alla prossima! 👋"
+    esc_text = MetodiTg.escape_special_chars(text)
+    await query.edit_message_text(esc_text, parse_mode="MarkdownV2")
     return ConversationHandler.END
 
 def main() -> int:
@@ -180,18 +189,14 @@ def main() -> int:
     # $ means "end of line/string"
     # So ^ABC$ will only allow 'ABC'
     conv_handler = ConversationHandler(
-        entry_points=[CommandHandler("focus", enter_cycle)],
+        entry_points=[CommandHandler("meteo", enter_cycle)],
         states={
             RANGE1: [
                 CallbackQueryHandler(
-                    scelta_city, pattern="^" + str(ONE) + "$"),
-                CallbackQueryHandler(
-                    scelta_city, pattern="^" + str(TWO) + "$"),
-                CallbackQueryHandler(
-                    scelta_city, pattern="^" + str(THREE) + "$"),
-                CallbackQueryHandler(
-                    scelta_giorno_inizio, pattern="^" + str(FOUR) + "$"),
-                CallbackQueryHandler(end, pattern="^" + str(TEN) + "$"),
+                    scelta_giorno_fine, pattern="^" + str(ONE) + "$"),
+                CallbackQueryHandler(scelta_giorno_fine, pattern="^" + str(TWO) + "$"),
+                CallbackQueryHandler(scelta_giorno_inizio, pattern="^" + str(NINE) + "$"),
+                CallbackQueryHandler(end_query, pattern="^" + str(TEN) + "$"),
             ],
             RANGE2: [
                 CallbackQueryHandler(
@@ -205,32 +210,31 @@ def main() -> int:
                 CallbackQueryHandler(
                     scelta_giorno_fine, pattern="^" + str(FIVE) + "$"),
                 CallbackQueryHandler(
-                    end, pattern="^" + str(TEN) + "$"),
+                    end_query, pattern="^" + str(TEN) + "$"),
             ],
             RANGE3: [
                 CallbackQueryHandler(
-                    scelta_city, pattern="^" + str(ONE) + "$"),
+                    save_fine, pattern="^" + str(ONE) + "$"),
                 CallbackQueryHandler(
-                    scelta_city, pattern="^" + str(TWO) + "$"),
+                    save_fine, pattern="^" + str(TWO) + "$"),
                 CallbackQueryHandler(
-                    scelta_city, pattern="^" + str(THREE) + "$"),
+                    save_fine, pattern="^" + str(THREE) + "$"),
                 CallbackQueryHandler(
-                    scelta_city, pattern="^" + str(FOUR) + "$"),
+                    save_fine, pattern="^" + str(FOUR) + "$"),
                 CallbackQueryHandler(
-                    scelta_city, pattern="^" + str(FIVE) + "$"),
-                CallbackQueryHandler(end, pattern="^" + str(TEN) + "$"),
+                    save_fine, pattern="^" + str(FIVE) + "$"),
+                CallbackQueryHandler(end_query, pattern="^" + str(TEN) + "$"),
             ],
-
+            RANGE4: [
+                MessageHandler(filters.TEXT, scelta_city)
+            ],
         },
         fallbacks=[CommandHandler("start", enter_cycle)],
     )
 
     # Add ConversationHandler to application that will be used for handling updates
     application.add_handler(conv_handler)
-
     application.add_handler(CommandHandler("help", help_command))
-    application.add_handler(CommandHandler("print", stampa))
-
     # Run the bot until the user presses Ctrl-C
     application.run_polling(allowed_updates=Update.ALL_TYPES)
 

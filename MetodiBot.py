@@ -56,15 +56,8 @@ def get_weather_data(city_name, days_min, days_max):
         print('Error retrieving weather data')
 
     nome_citta = weather_data['city']['name']
-    text = f"Ecco le previsioni per {nome_citta}."
+    text = f"*Ecco le previsioni per {nome_citta}*.\n\n"
 
-    """# aggiungere controllo che sceglie che aggiornamenti dare 
-        if days_number == 1:
-            # Iterare da 1 a 10 con incremento di 2
-            for i in range(0, len(weather_data['list']), 2):
-                break
-            range(10)"""
-    da_quando = 2
     for i in range(1, len(weather_data['list'])):
         min_epoch = mattina_del_giorno(days_min)
         max_epoch = get_future_epoch(days_max)
@@ -95,8 +88,8 @@ def get_weather_data(city_name, days_min, days_max):
         except:
             rain_v= """non ha piovuto"""
         
-        text = text + str(f"""Il giorno {giorno}, alle ore {ora},
-e' previsto {weather_description}.
+        text = text + str(f"""*Il giorno {giorno}, alle ore {ora}*,
+e' previsto *{weather_description}*.
 Con una temperatura di {temp}°C, percepita come {temp_feels_like}°C.
 Probabilita' di precipitazioni: {pop}
 Precipitazioni nelle ultime 3 ore: {rain_v}\n
@@ -134,7 +127,3 @@ def mattina_del_giorno(giorni_da_aspettare):
     morning_datetime = datetime.datetime.combine(future_date, morning_time)
     morning_timestamp = morning_datetime.timestamp()
     return morning_timestamp
-
-text = get_weather_data("Bressanone", 1, 5)
-
-print (text)
