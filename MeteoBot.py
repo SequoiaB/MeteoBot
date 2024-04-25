@@ -20,7 +20,7 @@ from io import BytesIO
 
 
 load_dotenv()
-bot_token = os.getenv("BOT_TOKEN")
+bot_token = os.getenv("TEST_BOT_TOKEN")
 # Enable logging
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
@@ -177,6 +177,53 @@ async def end_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     await query.edit_message_text(esc_text, parse_mode="MarkdownV2")
     return ConversationHandler.END
 
+async def scegli_giorno(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    global tempInfo
+    tempInfo = {'city': "?",
+                'start': 0,
+                'finish': 0,
+                }
+    reply_keyboard = MetodiBot.gestioneGiorni()
+
+    keyboard = [
+        [
+            InlineKeyboardButton(str(reply_keyboard[0]), callback_data=str(ONE)),
+            InlineKeyboardButton(str(reply_keyboard[1]),callback_data=str(TWO)),
+        ],
+        [
+            InlineKeyboardButton(str(reply_keyboard[2]), callback_data=str(THREE)),
+            InlineKeyboardButton(str(reply_keyboard[3]), callback_data=str(FOUR)),
+        ],
+        [
+            InlineKeyboardButton(str(reply_keyboard[4]), callback_data=str(FIVE)),
+            InlineKeyboardButton(str(reply_keyboard[5]), callback_data=str(SIX)),
+        ],
+        [
+            InlineKeyboardButton("esci", callback_data=str(SEVEN)),
+        ]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    # Send message with text and appended InlineKeyboard
+    await update.message.reply_text("Ciao! per che giornata/e vuoi vedere il meteo?🪟", reply_markup=reply_markup)
+    # Tell ConversationHandler that we're in state `FIRST` now
+    return STATE1
+
+async def meteo_per_giorno_scelto(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+
+    global tempInfo
+    query = update.callback_query
+    await query.answer()
+    data = int(query.data)
+    giorni = MetodiBot.gestioneGiorni()
+    text = MetodiBot.get_weather_data_single_day("padova", data)
+    esc_text = MetodiTg.escape_special_chars(text)
+    print(update)
+    await query.edit_message_text(esc_text, parse_mode="MarkdownV2")
+    await end(update=update, context=context)
+    return ConversationHandler.END
+
+STATE1 = range(1)
+
 def main() -> int:
     """Start the bot."""
     # Create the Application and pass it your bot's token.
@@ -188,6 +235,19 @@ def main() -> int:
     # ^ means "start of line/string"
     # $ means "end of line/string"
     # So ^ABC$ will only allow 'ABC'
+    giorno_singolo = ConversationHandler(
+        entry_points=[CommandHandler(["m"], scegli_giorno)],
+        states = {
+            STATE1: [CallbackQueryHandler(meteo_per_giorno_scelto , pattern="^" + str(ONE) + "$"),
+                     CallbackQueryHandler(meteo_per_giorno_scelto , pattern="^" + str(TWO) + "$"),
+                     CallbackQueryHandler(meteo_per_giorno_scelto , pattern="^" + str(THREE) + "$"),
+                     CallbackQueryHandler(meteo_per_giorno_scelto , pattern="^" + str(FOUR) + "$"),
+                     CallbackQueryHandler(meteo_per_giorno_scelto , pattern="^" + str(FIVE) + "$"),
+                     CallbackQueryHandler(meteo_per_giorno_scelto , pattern="^" + str(SIX) + "$"),
+                ],
+            },
+        fallbacks=[CommandHandler("m", scegli_giorno)],
+    )
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler(["meteo", "start"], enter_cycle)],
         states={
@@ -234,6 +294,7 @@ def main() -> int:
 
     # Add ConversationHandler to application that will be used for handling updates
     application.add_handler(conv_handler)
+    application.add_handler(giorno_singolo)
     application.add_handler(CommandHandler("help", help_command))
     # Run the bot until the user presses Ctrl-C
     application.run_polling(allowed_updates=Update.ALL_TYPES)
