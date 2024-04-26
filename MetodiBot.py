@@ -134,7 +134,7 @@ def get_weather_data_single_day(city_name, days_from_now):
 
     nome_citta = weather_data['city']['name']
     e_nome_citta = MetodiTg.escape_special_chars(nome_citta)
-    text = f"*🪟Ecco le previsioni per _{e_nome_citta}_, {e_state}, {e_country}*🌡️\.\n@meteoSequoiaBot\n"
+    text = f"*🪟Ecco le previsioni per _{e_nome_citta}_, {e_state}, {e_country}*🌡️\.\n@meteoSequoiaBot"
 
     for i in range(0, len(weather_data['list'])):
         min_epoch = mattina_del_giorno(days_from_now)
@@ -166,23 +166,23 @@ def get_weather_data_single_day(city_name, days_from_now):
         # probability of precipitation
         pop = str(int(float(weather_data['list'][i]['pop']) * 100)) + "%" 
         e_pop = MetodiTg.escape_special_chars(pop)
+
+        text = text + str(f"""\n
+> *Il giorno {e_giorno}, alle ore {ora}*,
+è previsto *{weather_description}{emote}*\.
+Con una temperatura di *{e_temp}°C*""")
+        if abs(float(temp)- float(temp_feels_like)) > 1: 
+            text = text + str(f""", *percepita come {e_temp_feels_like}°C*""")
+
+        text = text + str(f"""\.\n_Probabilita' di precipitazioni: *{e_pop}*_""")
         # Rain volume for last 3 hours, mm
         try:
             rain_v =  weather_data['list'][i]['rain']['3h']
             rain_v = MetodiTg.escape_special_chars(str(rain_v)) + str("mm")
+            text = text + str(f"""\n_Precipitazioni nelle ultime 3 ore: *{rain_v}*_\.""")
         except:
-            rain_v= """non ha piovuto"""
-        
-        text = text + str(f""">*Il giorno {e_giorno}, alle ore {ora}*,
->e' previsto *{weather_description}{emote}*\.
->Con una temperatura di {e_temp}°C""")
-        if abs(float(temp)- float(temp_feels_like)) > 1: 
-            text = text + str(f""", *percepita come {e_temp_feels_like}°C*""")
+            print("""non ha piovuto""")
 
-        text = text + str(f"""\.
->Probabilita' di precipitazioni: {e_pop}
->Precipitazioni nelle ultime 3 ore: {rain_v}\.\n
-""")
     return text
 
 def get_future_epoch(days):
