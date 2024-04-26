@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 import os
 from datetime import timedelta
 import time, datetime
+import MetodiTg
 load_dotenv()
 api_key = os.getenv("API_BOT_TOKEN")
 
@@ -130,7 +131,7 @@ def get_weather_data_single_day(city_name, days_from_now):
         print('Error retrieving weather data')
 
     nome_citta = weather_data['city']['name']
-    text = f"*Ecco le previsioni per {nome_citta}*.\n\n"
+    text = f"*Ecco le previsioni per _{nome_citta}_*\.\n\n"
 
     for i in range(0, len(weather_data['list'])):
         min_epoch = mattina_del_giorno(days_from_now)
@@ -144,9 +145,11 @@ def get_weather_data_single_day(city_name, days_from_now):
             print("dato skippato perche' troppo tardi")
             break
         giorno, ora = unix_to_datetime(quando_dt)
+        e_giorno = MetodiTg.escape_special_chars(giorno)
         # weather
         weather = weather_data['list'][i]['weather']
         weather_id = weather[0]['id']
+        emote = emoticon_for_id(weather_id)
         weather_main = weather[0]['main']
         weather_description = weather[0]['description']
         weather_icon = weather[0]['icon']
@@ -154,21 +157,23 @@ def get_weather_data_single_day(city_name, days_from_now):
         misc_main = weather_data['list'][i]['main']
         temp = misc_main['temp']
         temp_feels_like = misc_main['feels_like']
+        e_temp = MetodiTg.escape_special_chars(str(temp))
+        e_temp_feels_like = MetodiTg.escape_special_chars(str(temp_feels_like))
         humidity = misc_main['humidity']
         # probability of precipitation
         pop = str(int(weather_data['list'][i]['pop']) * 100) + "%" 
         # Rain volume for last 3 hours, mm
         try:
             rain_v =  weather_data['list'][i]['rain']['3h']
-            rain_v = str(rain_v) + str("mm")
+            rain_v = MetodiTg.escape_special_chars(str(rain_v)) + str("mm")
         except:
             rain_v= """non ha piovuto"""
         
-        text = text + str(f"""*Il giorno {giorno}, alle ore {ora}*,
-e' previsto *{weather_description}*.
-Con una temperatura di {temp}°C, percepita come {temp_feels_like}°C.
-Probabilita' di precipitazioni: {pop}
-Precipitazioni nelle ultime 3 ore: {rain_v}\n
+        text = text + str(f""">*Il giorno {e_giorno}, alle ore {ora}*,
+>e' previsto *{weather_description}{emote}*\.
+>Con una temperatura di {e_temp}°C, percepita come {e_temp_feels_like}°C\.
+>Probabilita' di precipitazioni: {pop}
+>Precipitazioni nelle ultime 3 ore: {rain_v}\.\n
 """)
     return text
 
@@ -224,6 +229,31 @@ def gestioneGiorni():
 
     return risultato
 
-
-text = get_weather_data_single_day("Padova", 0)
-print (text)
+def emoticon_for_id(id):
+    id = int(id)
+    if 200 <= id <= 232:
+        return "🌩️"
+    if 300 <= id <= 321:
+        return "🌧️"
+    if id == 500 or id == 501:
+        return "☔"
+    if id == 511:
+        return "🌧️🌨️"
+    if 502 <= id <= 504:
+        return "🌧️💧"
+    if 520 <= id <= 531:
+        return "🌧️☂️"
+    if 600<= id <= 622:
+        return "🌨️❄️"
+    if 701 <= id <= 781:
+        return "🌫️🌫️"
+    if id == 800:
+        return "☀️"
+    if id == 801:
+        return "🌤️🌤️"
+    if id == 802:
+        return "⛅⛅"
+    if id == 803:
+        return "🌥️🌥️"
+    if id == 804:
+        return "☁️☁️"

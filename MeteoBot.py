@@ -214,11 +214,12 @@ async def meteo_per_giorno_scelto(update: Update, context: ContextTypes.DEFAULT_
     query = update.callback_query
     await query.answer()
     data = int(query.data)
-    giorni = MetodiBot.gestioneGiorni()
+    
     text = MetodiBot.get_weather_data_single_day("padova", data)
-    esc_text = MetodiTg.escape_special_chars(text)
-    print(update)
-    await query.edit_message_text(esc_text, parse_mode="MarkdownV2")
+    #esc_text = MetodiTg.escape_special_chars(text)
+    #print(update)
+    #print(esc_text)
+    await query.edit_message_text(text, parse_mode="MarkdownV2")
     await end(update=update, context=context)
     return ConversationHandler.END
 
