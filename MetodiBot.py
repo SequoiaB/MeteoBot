@@ -227,14 +227,14 @@ def gestioneGiorni():
     oggi = datetime.datetime.now()
 
     # Crea un array per i giorni della settimana
-    giorni_settimana = ['lun', 'mar', 'mer', 'gio', 'ven', 'sab', 'dom']
+    giorni_settimana = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica']
 
     # Calcola i prossimi 7 giorni
     prossimi_giorni = [oggi + timedelta(days=i) for i in range(7)]
 
     # Formatta l'output nel modo desiderato
-    risultato = [[f"{giorni_settimana[data.weekday()]}_{data.strftime('%d-%m-%y')}"] for data in prossimi_giorni]
-
+    risultato = [[f"{giorni_settimana[data.weekday()]} {data.strftime('%d-%m')}"] for data in prossimi_giorni]
+    print(risultato)
     return risultato
 
 def emoticon_for_id(id):

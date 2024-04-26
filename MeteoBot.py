@@ -73,16 +73,16 @@ async def scegli_giorno(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
 
     keyboard = [
         [
-            InlineKeyboardButton(str(reply_keyboard[0]), callback_data=str(ONE)),
-            InlineKeyboardButton(str(reply_keyboard[1]),callback_data=str(TWO)),
+            InlineKeyboardButton(str(reply_keyboard[0][0]), callback_data=str(ONE)),
+            InlineKeyboardButton(str(reply_keyboard[1][0]),callback_data=str(TWO)),
         ],
         [
-            InlineKeyboardButton(str(reply_keyboard[2]), callback_data=str(THREE)),
-            InlineKeyboardButton(str(reply_keyboard[3]), callback_data=str(FOUR)),
+            InlineKeyboardButton(str(reply_keyboard[2][0]), callback_data=str(THREE)),
+            InlineKeyboardButton(str(reply_keyboard[3][0]), callback_data=str(FOUR)),
         ],
         [
-            InlineKeyboardButton(str(reply_keyboard[4]), callback_data=str(FIVE)),
-            InlineKeyboardButton(str(reply_keyboard[5]), callback_data=str(SIX)),
+            InlineKeyboardButton(str(reply_keyboard[4][0]), callback_data=str(FIVE)),
+            InlineKeyboardButton(str(reply_keyboard[5][0]), callback_data=str(SIX)),
         ],
         [
             InlineKeyboardButton("esci", callback_data=str(SEVEN)),
