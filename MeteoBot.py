@@ -20,7 +20,7 @@ from io import BytesIO
 
 
 load_dotenv()
-bot_token = os.getenv("TEST_BOT_TOKEN")
+bot_token = os.getenv("BOT_TOKEN")
 # Enable logging
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
