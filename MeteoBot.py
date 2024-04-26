@@ -85,7 +85,7 @@ async def scegli_giorno(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
             InlineKeyboardButton(str(reply_keyboard[5][0]), callback_data=str(SIX)),
         ],
         [
-            InlineKeyboardButton("esci", callback_data=str(SEVEN)),
+            InlineKeyboardButton("Esci", callback_data=str(SEVEN)),
         ]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)

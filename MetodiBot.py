@@ -265,3 +265,33 @@ def emoticon_for_id(id):
         return "🌥️🌥️"
     if id == 804:
         return "☁️☁️"
+    
+
+def luoghi_possibili(city_name):
+    # API endpoint URL
+    url1 = f'http://api.openweathermap.org/geo/1.0/direct?'
+    url2 = f'q={city_name}&limit={10}&lang={"IT"}&appid={api_key}'
+    url3 = url1+url2
+    # Send the API request
+    responseGeo = requests.get(url3)
+
+    # Check if the request was successful
+    if responseGeo.status_code == 200:
+        # Get the weather data
+        text ="Ecco le città che ho trovato\n"
+        geo_data = responseGeo.json()
+        for i in (0, len(geo_data)-1):
+            # Extract relevant weather information
+            name = geo_data[i]['name']
+            lat = geo_data[i]['lat']
+            lon = geo_data[i]['lon']
+            country = geo_data[i]['country']
+            state = geo_data[i]['state']
+            e_country = MetodiTg.escape_special_chars(country)
+            e_state = MetodiTg.escape_special_chars(state)
+            text= text + f"""{e_country}, {e_state}, {name}\n{lat} {lon}\n"""
+        print(text)
+    else:
+        print('Error retrieving geographic data')
+
+luoghi_possibili("Mirano")
