@@ -166,7 +166,14 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
     await update.message.reply_text(help_message, parse_mode="MarkdownV2")
 
 async def end(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    
+    text = "Ok, scrivimi quando ti servono informaizoni sul meteo!☀️🍃"
+    try:
+        query = update.callback_query
+        await query.answer()
+        await query.edit_message_text(text)
+    except:
+        await update.message.reply_text(text)
+
     return ConversationHandler.END
 
 async def end_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -176,6 +183,16 @@ async def end_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     esc_text = MetodiTg.escape_special_chars(text)
     await query.edit_message_text(esc_text, parse_mode="MarkdownV2")
     return ConversationHandler.END
+
+async def scegli_luogo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    global tempInfo
+    tempInfo = {
+                'city': "?",
+                'giorno': 0,
+                }
+    text = "Ciao! che citta ti interessa?"
+    await update.message.reply_text(text)
+    return STATE1
 
 async def scegli_giorno(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     global tempInfo
@@ -206,16 +223,6 @@ async def scegli_giorno(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
     # Tell ConversationHandler that we're in state `FIRST` now
     return STATE2
 
-async def scegli_luogo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    global tempInfo
-    tempInfo = {
-                'city': "?",
-                'giorno': 0,
-                }
-    text = "Ciao! che citta ti interessa?"
-    await update.message.reply_text(text)
-    return STATE1
-
 async def meteo_per_giorno_scelto(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
     global tempInfo
@@ -223,13 +230,13 @@ async def meteo_per_giorno_scelto(update: Update, context: ContextTypes.DEFAULT_
     await query.answer()
     data = int(query.data)
     tempInfo['giorno'] = data
-    
-    text = MetodiBot.get_weather_data_single_day(tempInfo["city"], tempInfo['giorno'])
-    #esc_text = MetodiTg.escape_special_chars(text)
-    #print(update)
-    print(text)
+    try:
+        text = MetodiBot.get_weather_data_single_day(tempInfo["city"], tempInfo['giorno'])
+    except: 
+        text = """*Qualcosa è andato storto*\. _Probabilmente non sono riuscito a trovare la città\.
+Aspetta il prosssimo aggiornameto perché venga risolto il problema\._
+*Se vuoi condividi l'errore mandando uno screenshot della chat a @quality365*\."""
     await query.edit_message_text(text, parse_mode="MarkdownV2")
-    await end(update=update, context=context)
     return ConversationHandler.END
 
 STATE1, STATE2 = range(2)
@@ -246,7 +253,7 @@ def main() -> int:
     # $ means "end of line/string"
     # So ^ABC$ will only allow 'ABC'
     giorno_singolo = ConversationHandler(
-        entry_points=[CommandHandler(["m"], scegli_luogo)],
+        entry_points=[CommandHandler(["meteo", "start"], scegli_luogo)],
         states = {
             STATE1: [MessageHandler(filters.TEXT, scegli_giorno)
                      ],
@@ -256,12 +263,13 @@ def main() -> int:
                      CallbackQueryHandler(meteo_per_giorno_scelto , pattern="^" + str(FOUR) + "$"),
                      CallbackQueryHandler(meteo_per_giorno_scelto , pattern="^" + str(FIVE) + "$"),
                      CallbackQueryHandler(meteo_per_giorno_scelto , pattern="^" + str(SIX) + "$"),
+                     CallbackQueryHandler(end , pattern="^" + str(SEVEN) + "$"),
                 ],
             },
-        fallbacks=[CommandHandler("m", scegli_giorno)],
+        fallbacks=[CommandHandler(["meteo", "start"], scegli_giorno)],
     )
     conv_handler = ConversationHandler(
-        entry_points=[CommandHandler(["meteo", "start"], enter_cycle)],
+        entry_points=[CommandHandler(["oldmeteo"], enter_cycle)],
         states={
             RANGE1: [
                 CallbackQueryHandler(
@@ -301,7 +309,7 @@ def main() -> int:
                 MessageHandler(filters.TEXT, scelta_city)
             ],
         },
-        fallbacks=[CommandHandler("start", enter_cycle)],
+        fallbacks=[CommandHandler("oldmeteo", enter_cycle)],
     )
 
     # Add ConversationHandler to application that will be used for handling updates
