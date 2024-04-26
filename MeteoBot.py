@@ -179,10 +179,8 @@ async def end_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
 async def scegli_giorno(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     global tempInfo
-    tempInfo = {'city': "?",
-                'start': 0,
-                'finish': 0,
-                }
+    city = update.message.text
+    tempInfo['city'] = city
     reply_keyboard = MetodiBot.gestioneGiorni()
 
     keyboard = [
@@ -204,8 +202,18 @@ async def scegli_giorno(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     # Send message with text and appended InlineKeyboard
-    await update.message.reply_text("Ciao! per che giornata/e vuoi vedere il meteo?🪟", reply_markup=reply_markup)
+    await update.message.reply_text("Per che giornata vuoi vedere il meteo?🪟", reply_markup=reply_markup)
     # Tell ConversationHandler that we're in state `FIRST` now
+    return STATE2
+
+async def scegli_luogo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    global tempInfo
+    tempInfo = {
+                'city': "?",
+                'giorno': 0,
+                }
+    text = "Ciao! che citta ti interessa?"
+    await update.message.reply_text(text)
     return STATE1
 
 async def meteo_per_giorno_scelto(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -214,16 +222,17 @@ async def meteo_per_giorno_scelto(update: Update, context: ContextTypes.DEFAULT_
     query = update.callback_query
     await query.answer()
     data = int(query.data)
+    tempInfo['giorno'] = data
     
-    text = MetodiBot.get_weather_data_single_day("padova", data)
+    text = MetodiBot.get_weather_data_single_day(tempInfo["city"], tempInfo['giorno'])
     #esc_text = MetodiTg.escape_special_chars(text)
     #print(update)
-    #print(esc_text)
+    print(text)
     await query.edit_message_text(text, parse_mode="MarkdownV2")
     await end(update=update, context=context)
     return ConversationHandler.END
 
-STATE1 = range(1)
+STATE1, STATE2 = range(2)
 
 def main() -> int:
     """Start the bot."""
@@ -237,9 +246,11 @@ def main() -> int:
     # $ means "end of line/string"
     # So ^ABC$ will only allow 'ABC'
     giorno_singolo = ConversationHandler(
-        entry_points=[CommandHandler(["m"], scegli_giorno)],
+        entry_points=[CommandHandler(["m"], scegli_luogo)],
         states = {
-            STATE1: [CallbackQueryHandler(meteo_per_giorno_scelto , pattern="^" + str(ONE) + "$"),
+            STATE1: [MessageHandler(filters.TEXT, scegli_giorno)
+                     ],
+            STATE2: [CallbackQueryHandler(meteo_per_giorno_scelto , pattern="^" + str(ONE) + "$"),
                      CallbackQueryHandler(meteo_per_giorno_scelto , pattern="^" + str(TWO) + "$"),
                      CallbackQueryHandler(meteo_per_giorno_scelto , pattern="^" + str(THREE) + "$"),
                      CallbackQueryHandler(meteo_per_giorno_scelto , pattern="^" + str(FOUR) + "$"),

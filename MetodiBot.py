@@ -114,6 +114,8 @@ def get_weather_data_single_day(city_name, days_from_now):
         lon = geo_data[0]['lon']
         country = geo_data[0]['country']
         state = geo_data[0]['state']
+        e_country = MetodiTg.escape_special_chars(country)
+        e_state = MetodiTg.escape_special_chars(state)
     else:
         print('Error retrieving geographic data')
 
@@ -131,7 +133,8 @@ def get_weather_data_single_day(city_name, days_from_now):
         print('Error retrieving weather data')
 
     nome_citta = weather_data['city']['name']
-    text = f"*Ecco le previsioni per _{nome_citta}_*\.\n\n"
+    e_nome_citta = MetodiTg.escape_special_chars(nome_citta)
+    text = f"*🪟Ecco le previsioni per _{e_nome_citta}_, {e_state}, {e_country}*🌡️\.\n@meteoSequoiaBot\n"
 
     for i in range(0, len(weather_data['list'])):
         min_epoch = mattina_del_giorno(days_from_now)
@@ -161,7 +164,8 @@ def get_weather_data_single_day(city_name, days_from_now):
         e_temp_feels_like = MetodiTg.escape_special_chars(str(temp_feels_like))
         humidity = misc_main['humidity']
         # probability of precipitation
-        pop = str(int(weather_data['list'][i]['pop']) * 100) + "%" 
+        pop = str(int(float(weather_data['list'][i]['pop']) * 100)) + "%" 
+        e_pop = MetodiTg.escape_special_chars(pop)
         # Rain volume for last 3 hours, mm
         try:
             rain_v =  weather_data['list'][i]['rain']['3h']
@@ -171,8 +175,12 @@ def get_weather_data_single_day(city_name, days_from_now):
         
         text = text + str(f""">*Il giorno {e_giorno}, alle ore {ora}*,
 >e' previsto *{weather_description}{emote}*\.
->Con una temperatura di {e_temp}°C, percepita come {e_temp_feels_like}°C\.
->Probabilita' di precipitazioni: {pop}
+>Con una temperatura di {e_temp}°C""")
+        if abs(float(temp)- float(temp_feels_like)) > 1: 
+            text = text + str(f""", *percepita come {e_temp_feels_like}°C*""")
+
+        text = text + str(f"""\.
+>Probabilita' di precipitazioni: {e_pop}
 >Precipitazioni nelle ultime 3 ore: {rain_v}\.\n
 """)
     return text
