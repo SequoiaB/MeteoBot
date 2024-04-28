@@ -4,9 +4,10 @@ import os
 from datetime import timedelta
 import time, datetime
 import MetodiTg
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 load_dotenv()
 api_key = os.getenv("API_BOT_TOKEN")
-
+ONE, TWO, THREE, FOUR, FIVE, SIX, SEVEN = range(7)
 def unix_to_datetime(unix_timestamp):
     """
     Converts a Unix timestamp to a human-readable date/time string.
@@ -96,28 +97,16 @@ Precipitazioni nelle ultime 3 ore: {rain_v}\n
 """)
     return text
 
-def get_weather_data_single_day(city_name, days_from_now):
-    # API endpoint URL
-    url1 = f'http://api.openweathermap.org/geo/1.0/direct?'
-    url2 = f'q={city_name}&limit={1}&appid={api_key}'
-    url3 = url1+url2
-    # Send the API request
-    responseGeo = requests.get(url3)
+def get_weather_data_single_day(tempInfo, days_from_now):
+    # Extract relevant weather information
+    scelta = tempInfo
+    lat = tempInfo['lat']
+    lon = tempInfo['lon']
+    country = tempInfo['country']
+    state = tempInfo['state']
+    e_country = MetodiTg.escape_special_chars(country)
+    e_state = MetodiTg.escape_special_chars(state)
 
-    # Check if the request was successful
-    if responseGeo.status_code == 200:
-        # Get the weather data
-        geo_data = responseGeo.json()
-        # Extract relevant weather information
-        name = geo_data[0]['name']
-        lat = geo_data[0]['lat']
-        lon = geo_data[0]['lon']
-        country = geo_data[0]['country']
-        state = geo_data[0]['state']
-        e_country = MetodiTg.escape_special_chars(country)
-        e_state = MetodiTg.escape_special_chars(state)
-    else:
-        print('Error retrieving geographic data')
 
     # API endpoint URL
     url = f'https://api.openweathermap.org/data/2.5/forecast?lat={lat}&lon={lon}&lang={"IT"}&units={"metric"}&appid={api_key}'
@@ -174,7 +163,7 @@ Con una temperatura di *{e_temp}°C*""")
         if abs(float(temp)- float(temp_feels_like)) > 1: 
             text = text + str(f""", *percepita come {e_temp_feels_like}°C*""")
 
-        text = text + str(f"""\.\n_Probabilita' di precipitazioni: *{e_pop}*_""")
+        text = text + str(f"""\.\n_Probabilità di precipitazioni: *{e_pop}*_""")
         # Rain volume for last 3 hours, mm
         try:
             rain_v =  weather_data['list'][i]['rain']['3h']
@@ -265,12 +254,12 @@ def emoticon_for_id(id):
         return "🌥️🌥️"
     if id == 804:
         return "☁️☁️"
-    
+
 
 def luoghi_possibili(city_name):
     # API endpoint URL
     url1 = f'http://api.openweathermap.org/geo/1.0/direct?'
-    url2 = f'q={city_name}&limit={10}&lang={"IT"}&appid={api_key}'
+    url2 = f'q={city_name}&limit={20}&appid={api_key}'
     url3 = url1+url2
     # Send the API request
     responseGeo = requests.get(url3)
@@ -278,20 +267,42 @@ def luoghi_possibili(city_name):
     # Check if the request was successful
     if responseGeo.status_code == 200:
         # Get the weather data
-        text ="Ecco le città che ho trovato\n"
+        
         geo_data = responseGeo.json()
-        for i in (0, len(geo_data)-1):
-            # Extract relevant weather information
-            name = geo_data[i]['name']
-            lat = geo_data[i]['lat']
-            lon = geo_data[i]['lon']
-            country = geo_data[i]['country']
-            state = geo_data[i]['state']
-            e_country = MetodiTg.escape_special_chars(country)
-            e_state = MetodiTg.escape_special_chars(state)
-            text= text + f"""{e_country}, {e_state}, {name}\n{lat} {lon}\n"""
-        print(text)
-    else:
-        print('Error retrieving geographic data')
+        #print(geo_data)
+        lista = []
+        if geo_data:
+            for i in range(len(geo_data)):
+                if geo_data[i]['country'] != "IT":
+                    continue
+                # Creare un nuovo dizionario per ogni elemento valido
+                temp = {}
+                temp["name"] = geo_data[i]['name']
+                temp['lat'] = geo_data[i]['lat']
+                temp['lon'] = geo_data[i]['lon']
+                temp['state'] = geo_data[i]['state']
+                temp['country'] = geo_data[i]['country']
+                lista.append(temp)  # Aggiungi il dizionario temporaneo alla lista
 
-luoghi_possibili("Mirano")
+            if lista:
+                return lista
+            else:
+                print('No geographic data found for Italy')
+        else:
+            print('Error retrieving geographic data')
+
+
+def build_city_keyboard(luoghi):
+    keyboard = []
+    row = []
+    for index, luogo in enumerate(luoghi, start=1):
+        print(luogo)
+        if index > 6:
+            continue
+        button = InlineKeyboardButton(str(luogo["name"])+", "+str(luogo["state"]), callback_data=str(index))
+        row.append(button)
+        if index % 2 == 0 or index == len(luoghi):
+            keyboard.append(row)
+            row = []
+    keyboard.append([InlineKeyboardButton("Esci", callback_data=str(SEVEN))])
+    return InlineKeyboardMarkup(keyboard)
