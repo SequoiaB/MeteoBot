@@ -18,7 +18,7 @@ from dotenv import load_dotenv
 import os
 from io import BytesIO
 
-STATE1, STATE2 = range(2)
+STATE1, STATE2,STATE3 = range(3)
 load_dotenv()
 bot_token = os.getenv("TEST_BOT_TOKEN")
 # Enable logging
@@ -51,6 +51,7 @@ async def end(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         await query.answer()
         await query.edit_message_text(text)
     except:
+        text = "qualcosa è andato storto, probabilmente non ho trovato la città che cerchi, contatta @qualidy365 se non è così"
         await update.message.reply_text(text)
 
     return ConversationHandler.END
@@ -65,10 +66,33 @@ async def scegli_luogo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
     await update.message.reply_text(text)
     return STATE1
 
-async def scegli_giorno(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def scegli_tra_i_luoghi(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     global tempInfo
     city = update.message.text
     tempInfo['city'] = city
+    try:
+        luoghi = MetodiBot.luoghi_possibili(tempInfo['city'])
+        tempInfo["possibili"] = luoghi
+        keyboard = MetodiBot.build_city_keyboard(luoghi)
+    
+        reply_markup = keyboard
+        text = "Quali delle seguenti ti interessa?🏙️🏢"
+        await update.message.reply_text(text, reply_markup=reply_markup)
+    except:
+        await end(update, context)
+        return ConversationHandler.END
+    return STATE2
+
+
+async def scegli_giorno(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    global tempInfo
+    query = update.callback_query
+    await query.answer()
+    data = int(query.data)
+    luoghi = tempInfo["possibili"]
+    scelta = luoghi[data-1]
+    print("scelta " ,scelta)
+    tempInfo["scelta"]= scelta
     reply_keyboard = MetodiBot.gestioneGiorni()
 
     keyboard = [
@@ -90,9 +114,8 @@ async def scegli_giorno(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     # Send message with text and appended InlineKeyboard
-    await update.message.reply_text("Per che giornata vuoi vedere il meteo?🪟", reply_markup=reply_markup)
-    # Tell ConversationHandler that we're in state `FIRST` now
-    return STATE2
+    await query.edit_message_text("Per che giornata vuoi vedere il meteo?🪟", reply_markup=reply_markup)
+    return STATE3
 
 async def meteo_per_giorno_scelto(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
@@ -102,7 +125,7 @@ async def meteo_per_giorno_scelto(update: Update, context: ContextTypes.DEFAULT_
     data = int(query.data)
     tempInfo['giorno'] = data
     try:
-        text = MetodiBot.get_weather_data_single_day(tempInfo["city"], tempInfo['giorno'])
+        text = MetodiBot.get_weather_data_single_day(tempInfo["scelta"], tempInfo['giorno'])
     except: 
         text = """*Qualcosa è andato storto*\. _Probabilmente non sono riuscito a trovare la città\.
 Aspetta il prosssimo aggiornameto perché venga risolto il problema\._
@@ -124,9 +147,17 @@ def main() -> int:
     giorno_singolo = ConversationHandler(
         entry_points=[CommandHandler(["meteo", "start"], scegli_luogo)],
         states = {
-            STATE1: [MessageHandler(filters.TEXT, scegli_giorno)
+            STATE1: [MessageHandler(filters.TEXT, scegli_tra_i_luoghi)
                      ],
-            STATE2: [CallbackQueryHandler(meteo_per_giorno_scelto , pattern="^" + str(ONE) + "$"),
+            STATE2: [CallbackQueryHandler(scegli_giorno , pattern="^" + str(ONE) + "$"),
+                     CallbackQueryHandler(scegli_giorno , pattern="^" + str(TWO) + "$"),
+                     CallbackQueryHandler(scegli_giorno , pattern="^" + str(THREE) + "$"),
+                     CallbackQueryHandler(scegli_giorno , pattern="^" + str(FOUR) + "$"),
+                     CallbackQueryHandler(scegli_giorno , pattern="^" + str(FIVE) + "$"),
+                     CallbackQueryHandler(scegli_giorno , pattern="^" + str(SIX) + "$"),
+                     CallbackQueryHandler(end , pattern="^" + str(SEVEN) + "$"),
+                ],
+            STATE3: [CallbackQueryHandler(meteo_per_giorno_scelto , pattern="^" + str(ONE) + "$"),
                      CallbackQueryHandler(meteo_per_giorno_scelto , pattern="^" + str(TWO) + "$"),
                      CallbackQueryHandler(meteo_per_giorno_scelto , pattern="^" + str(THREE) + "$"),
                      CallbackQueryHandler(meteo_per_giorno_scelto , pattern="^" + str(FOUR) + "$"),
